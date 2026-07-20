@@ -21,14 +21,16 @@ import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
      tool unless you add finer-grained rules later.
    ============================================================ */
 
-const INK = "#26261F";
-const PAPER = "#FAF6EC";
-const PANEL = "#F1ECDD";
-const FOREST = "#20402C";
-const FOREST_DK = "#152C1D";
-const GARNET = "#7C2233";
-const GOLD = "#B8912E";
-const LINE = "#D8CFB4";
+const INK = "#EDEAF7";
+const PAPER = "#0d0a1f";
+const PANEL = "#17102e";
+const CARD_BG = "#1c1440";
+const FOREST = "#7C6DF2";
+const FOREST_DK = "#2a1a63";
+const GARNET = "#FF6B81";
+const GOLD = "#E3B341";
+const LINE = "rgba(255,255,255,0.14)";
+const MUTED = "rgba(237,234,247,0.58)";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -123,7 +125,7 @@ function Card({ children, style }) {
   return (
     <div
       style={{
-        background: "#fff",
+        background: CARD_BG,
         border: `1px solid ${LINE}`,
         borderRadius: 4,
         boxShadow: "0 1px 0 rgba(0,0,0,0.03)",
@@ -137,7 +139,7 @@ function Card({ children, style }) {
 function Field({ label, children }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
-      <span style={{ color: "#6b6552", fontWeight: 600, letterSpacing: 0.3, textTransform: "uppercase", fontSize: 10 }}>
+      <span style={{ color: "rgba(237,234,247,0.58)", fontWeight: 600, letterSpacing: 0.3, textTransform: "uppercase", fontSize: 10 }}>
         {label}
       </span>
       {children}
@@ -149,7 +151,7 @@ const inputStyle = {
   borderRadius: 3,
   padding: "6px 8px",
   fontSize: 13,
-  background: "#fff",
+  background: CARD_BG,
   color: INK,
   fontFamily: "inherit",
 };
@@ -163,7 +165,7 @@ function Btn({ children, onClick, kind = "primary", style, disabled, title }) {
   const palette = {
     primary: { bg: FOREST, fg: "#fff", bd: FOREST },
     ghost: { bg: "transparent", fg: FOREST, bd: LINE },
-    danger: { bg: "#fff", fg: GARNET, bd: GARNET },
+    danger: { bg: "transparent", fg: GARNET, bd: GARNET },
     gold: { bg: GOLD, fg: "#26210a", bd: GOLD },
   }[kind];
   return (
@@ -190,7 +192,7 @@ function Btn({ children, onClick, kind = "primary", style, disabled, title }) {
 }
 function Empty({ text }) {
   return (
-    <div style={{ padding: "28px 16px", textAlign: "center", color: "#8a8368", fontSize: 13, fontStyle: "italic" }}>
+    <div style={{ padding: "28px 16px", textAlign: "center", color: "rgba(237,234,247,0.58)", fontSize: 13, fontStyle: "italic" }}>
       {text}
     </div>
   );
@@ -198,8 +200,8 @@ function Empty({ text }) {
 function SectionTitle({ children, sub }) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <h2 style={{ fontFamily: "Georgia, serif", fontSize: 20, color: FOREST_DK, margin: 0 }}>{children}</h2>
-      {sub && <div style={{ fontSize: 12.5, color: "#75705c", marginTop: 2 }}>{sub}</div>}
+      <h2 style={{ fontFamily: "Georgia, serif", fontSize: 20, color: FOREST, margin: 0 }}>{children}</h2>
+      {sub && <div style={{ fontSize: 12.5, color: "rgba(237,234,247,0.58)", marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
@@ -276,7 +278,7 @@ function TalaanApp({ user }) {
   return (
     <div style={{ minHeight: "100vh", background: PAPER, color: INK, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
       {/* header */}
-      <div style={{ background: `linear-gradient(180deg, ${FOREST} 0%, ${FOREST_DK} 100%)`, color: "#F3EFDD", padding: "16px 20px", borderBottom: `3px solid ${GOLD}` }}>
+      <div style={{ background: `linear-gradient(180deg, ${FOREST} 0%, ${FOREST_DK} 100%)`, color: "#EDEAF7", padding: "16px 20px", borderBottom: `3px solid ${GOLD}` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <span style={{ fontFamily: "Georgia, serif", fontSize: 26, letterSpacing: 0.5 }}>Talaan</span>
@@ -289,7 +291,7 @@ function TalaanApp({ user }) {
                 value={teacherName}
                 onChange={(e) => setTeacherName(e.target.value)}
                 placeholder="Your name"
-                style={{ width: 150, background: "#F3EFDD", border: "none" }}
+                style={{ width: 150, background: "rgba(255,255,255,0.12)", border: "none", color: "#EDEAF7" }}
               />
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, opacity: 0.85 }}>
@@ -299,7 +301,7 @@ function TalaanApp({ user }) {
               <span>{user?.email}</span>
               <button
                 onClick={() => signOut(auth)}
-                style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.4)", color: "#F3EFDD", borderRadius: 3, padding: "3px 9px", fontSize: 11, cursor: "pointer" }}
+                style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.4)", color: "#EDEAF7", borderRadius: 3, padding: "3px 9px", fontSize: 11, cursor: "pointer" }}
               >
                 Sign out
               </button>
@@ -320,7 +322,7 @@ function TalaanApp({ user }) {
                 border: "none",
                 cursor: "pointer",
                 background: tab === key ? PAPER : "rgba(255,255,255,0.08)",
-                color: tab === key ? FOREST_DK : "#EFE9D4",
+                color: tab === key ? "#fff" : "rgba(237,234,247,0.78)",
               }}
             >
               {label}
@@ -399,14 +401,14 @@ function Dashboard({ learners, classes, grades, collections, behavior, schoolInf
           ["4Ps / IP / ARAL tagged", learners.filter((l) => l.tags?.fourPs || l.tags?.ip || l.tags?.aral).length],
         ].map(([label, val]) => (
           <Card key={label} style={{ padding: 16 }}>
-            <div style={{ fontSize: 11, color: "#8a8368", textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div>
-            <div style={{ fontFamily: "Georgia, serif", fontSize: 26, color: FOREST_DK, marginTop: 4 }}>{val}</div>
+            <div style={{ fontSize: 11, color: "rgba(237,234,247,0.58)", textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div>
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 26, color: FOREST, marginTop: 4 }}>{val}</div>
           </Card>
         ))}
       </div>
 
       <Card style={{ padding: 16, marginBottom: 16 }}>
-        <div style={{ fontWeight: 700, marginBottom: 8, color: FOREST_DK }}>School details <span style={{ fontWeight: 400, color: "#8a8368", fontSize: 12 }}>(printed on SF2 / SF9)</span></div>
+        <div style={{ fontWeight: 700, marginBottom: 8, color: FOREST }}>School details <span style={{ fontWeight: 400, color: "rgba(237,234,247,0.58)", fontSize: 12 }}>(printed on SF2 / SF9)</span></div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
           <Field label="School name"><TIn value={schoolInfo.schoolName} onChange={(e) => setSchoolInfo({ ...schoolInfo, schoolName: e.target.value })} /></Field>
           <Field label="School ID"><TIn value={schoolInfo.schoolId} onChange={(e) => setSchoolInfo({ ...schoolInfo, schoolId: e.target.value })} /></Field>
@@ -418,7 +420,7 @@ function Dashboard({ learners, classes, grades, collections, behavior, schoolInf
       </Card>
 
       <Card style={{ padding: 16, marginBottom: 16 }}>
-        <div style={{ fontWeight: 700, marginBottom: 8, color: FOREST_DK }}>Your classes</div>
+        <div style={{ fontWeight: 700, marginBottom: 8, color: FOREST }}>Your classes</div>
         {classes.length === 0 ? (
           <Empty text="No classes yet — add one in the Classes tab." />
         ) : (
@@ -426,8 +428,8 @@ function Dashboard({ learners, classes, grades, collections, behavior, schoolInf
             {classes.map((c) => (
               <div key={c.id} style={{ border: `1px solid ${LINE}`, borderRadius: 4, padding: 10, background: PANEL }}>
                 <div style={{ fontWeight: 700, fontSize: 13.5 }}>{c.subject}</div>
-                <div style={{ fontSize: 12, color: "#665f47" }}>{c.gradeLevel} — {c.section}</div>
-                <div style={{ fontSize: 11.5, color: "#8a8368", marginTop: 4 }}>{c.learnerIds.length} learners · {c.termType}</div>
+                <div style={{ fontSize: 12, color: "rgba(237,234,247,0.65)" }}>{c.gradeLevel} — {c.section}</div>
+                <div style={{ fontSize: 11.5, color: "rgba(237,234,247,0.58)", marginTop: 4 }}>{c.learnerIds.length} learners · {c.termType}</div>
                 {c.coTeachers?.length > 0 && (
                   <div style={{ fontSize: 11, color: FOREST, marginTop: 4 }}>Shared with: {c.coTeachers.join(", ")}</div>
                 )}
@@ -438,7 +440,7 @@ function Dashboard({ learners, classes, grades, collections, behavior, schoolInf
       </Card>
 
       <Card style={{ padding: 16 }}>
-        <div style={{ fontWeight: 700, marginBottom: 8, color: FOREST_DK }}>Recent behavior notes</div>
+        <div style={{ fontWeight: 700, marginBottom: 8, color: FOREST }}>Recent behavior notes</div>
         {recentBehavior.length === 0 ? (
           <Empty text="No anecdotal entries logged yet." />
         ) : (
@@ -544,7 +546,7 @@ function LearnersTab({ learners, setLearners, classes }) {
     </div>
   );
 }
-const th = { padding: "8px 10px", fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.3, color: "#6b6552" };
+const th = { padding: "8px 10px", fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.3, color: "rgba(237,234,247,0.58)" };
 const td = { padding: "7px 10px" };
 
 /* ============================== CLASSES ============================== */
@@ -636,8 +638,8 @@ function ClassesTab({ classes, setClasses, learners, teacherName }) {
             <Card key={c.id} style={{ padding: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: FOREST_DK }}>{c.subject} <span style={{ fontWeight: 400, color: "#8a8368", fontSize: 12 }}>· {c.gradeLevel} {c.section}</span></div>
-                  <div style={{ fontSize: 11.5, color: "#8a8368" }}>{c.termType} · WW {c.weights.WW} / PT {c.weights.PT} / QA {c.weights.QA} · owner: {c.owner}</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: FOREST }}>{c.subject} <span style={{ fontWeight: 400, color: "rgba(237,234,247,0.58)", fontSize: 12 }}>· {c.gradeLevel} {c.section}</span></div>
+                  <div style={{ fontSize: 11.5, color: "rgba(237,234,247,0.58)" }}>{c.termType} · WW {c.weights.WW} / PT {c.weights.PT} / QA {c.weights.QA} · owner: {c.owner}</div>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   <Btn kind="ghost" onClick={() => setOpenRoster(openRoster === c.id ? null : c.id)}>
@@ -648,7 +650,7 @@ function ClassesTab({ classes, setClasses, learners, teacherName }) {
               </div>
 
               <div style={{ marginTop: 10 }}>
-                <div style={{ fontSize: 11, color: "#6b6552", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>Shared with (co-teachers)</div>
+                <div style={{ fontSize: 11, color: "rgba(237,234,247,0.58)", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>Shared with (co-teachers)</div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                   {c.coTeachers.map((n) => (
                     <span key={n} style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 12, padding: "3px 10px", fontSize: 12 }}>
@@ -664,7 +666,7 @@ function ClassesTab({ classes, setClasses, learners, teacherName }) {
                   />
                   <Btn kind="ghost" onClick={() => addCoTeacher(c.id)}>Add</Btn>
                 </div>
-                <div style={{ fontSize: 11, color: "#8a8368", marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: "rgba(237,234,247,0.58)", marginTop: 4 }}>
                   Any teacher who opens this app can already edit any class. Listing names here is just a visible record of who's teaching it together — it does not lock anyone out.
                 </div>
               </div>
@@ -783,7 +785,7 @@ function GradesTab({ classes, learners, grades, setGrades }) {
                     <span style={{ background: FOREST, color: "#fff", padding: "3px 10px", borderRadius: 12 }}>
                       Transmuted: {tg}
                     </span>
-                    <span style={{ color: "#665f47" }}>{descriptor(tg)}</span>
+                    <span style={{ color: "rgba(237,234,247,0.65)" }}>{descriptor(tg)}</span>
                   </div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
@@ -903,7 +905,7 @@ function AttendanceTab({ classes, learners, attendance, setAttendance, schoolInf
             <tbody>
               {roster.map((l) => (
                 <tr key={l.id} style={{ borderTop: `1px solid ${LINE}` }}>
-                  <td style={{ ...td, position: "sticky", left: 0, background: "#fff", whiteSpace: "nowrap" }}>{l.name}</td>
+                  <td style={{ ...td, position: "sticky", left: 0, background: CARD_BG, whiteSpace: "nowrap" }}>{l.name}</td>
                   {schoolDays.map((d) => {
                     const s = statusOf(l.id, d);
                     return (
@@ -916,7 +918,8 @@ function AttendanceTab({ classes, learners, attendance, setAttendance, schoolInf
                           }}
                           style={{
                             width: 22, height: 22, fontSize: 10, fontWeight: 700, border: `1px solid ${LINE}`, borderRadius: 3,
-                            background: s ? cellColor[s] : "#fff", cursor: "pointer",
+                            background: s ? cellColor[s] : "rgba(255,255,255,0.05)", cursor: "pointer",
+                            color: s ? "#1b1235" : INK,
                           }}
                         >
                           {s || ""}
@@ -932,7 +935,7 @@ function AttendanceTab({ classes, learners, attendance, setAttendance, schoolInf
       </Card>
 
       <Card style={{ padding: 14 }}>
-        <div style={{ fontWeight: 700, marginBottom: 8, color: FOREST_DK }}>SF2 monthly summary — {ym}</div>
+        <div style={{ fontWeight: 700, marginBottom: 8, color: FOREST }}>SF2 monthly summary — {ym}</div>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
           <thead>
             <tr style={{ background: PANEL }}>
@@ -947,7 +950,7 @@ function AttendanceTab({ classes, learners, attendance, setAttendance, schoolInf
             ))}
           </tbody>
         </table>
-        <div style={{ fontSize: 11, color: "#8a8368", marginTop: 8 }}>
+        <div style={{ fontSize: 11, color: "rgba(237,234,247,0.58)", marginTop: 8 }}>
           This table has the same fields your SF2 form needs — copy the counts across, or use it as your working register before transcribing to the official DepEd form.
         </div>
       </Card>
@@ -1035,9 +1038,9 @@ function SF9Tab({ classes, learners, grades, attendance, behavior, schoolInfo, c
 
       <Card style={{ padding: 18 }}>
         <div style={{ textAlign: "center", marginBottom: 14, borderBottom: `2px solid ${GOLD}`, paddingBottom: 10 }}>
-          <div style={{ fontSize: 11, letterSpacing: 1, color: "#8a8368" }}>REPORT ON LEARNING PROGRESS AND ACHIEVEMENT (SF9)</div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 20, color: FOREST_DK, marginTop: 4 }}>{learner.name}</div>
-          <div style={{ fontSize: 12, color: "#665f47" }}>LRN: {learner.lrn || "—"}</div>
+          <div style={{ fontSize: 11, letterSpacing: 1, color: "rgba(237,234,247,0.58)" }}>REPORT ON LEARNING PROGRESS AND ACHIEVEMENT (SF9)</div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 20, color: FOREST, marginTop: 4 }}>{learner.name}</div>
+          <div style={{ fontSize: 12, color: "rgba(237,234,247,0.65)" }}>LRN: {learner.lrn || "—"}</div>
         </div>
 
         {rows.length === 0 ? (
@@ -1072,13 +1075,13 @@ function SF9Tab({ classes, learners, grades, attendance, behavior, schoolInfo, c
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 12.5, color: FOREST_DK, marginBottom: 4 }}>Attendance</div>
+            <div style={{ fontWeight: 700, fontSize: 12.5, color: FOREST, marginBottom: 4 }}>Attendance</div>
             <div style={{ fontSize: 12.5 }}>
               Days marked: {totalMarked} · Days present: {totalPresent} · Rate: {totalMarked ? round1(pct(totalPresent, totalMarked)) : 0}%
             </div>
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 12.5, color: FOREST_DK, marginBottom: 4 }}>Learner tags</div>
+            <div style={{ fontWeight: 700, fontSize: 12.5, color: FOREST, marginBottom: 4 }}>Learner tags</div>
             <div style={{ fontSize: 12.5 }}>
               {TAG_DEFS.filter((t) => learner.tags?.[t.key]).map((t) => t.label).join(", ") || "None recorded"}
             </div>
@@ -1086,9 +1089,9 @@ function SF9Tab({ classes, learners, grades, attendance, behavior, schoolInfo, c
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <div style={{ fontWeight: 700, fontSize: 12.5, color: FOREST_DK, marginBottom: 4 }}>Observed behavior / anecdotal remarks</div>
+          <div style={{ fontWeight: 700, fontSize: 12.5, color: FOREST, marginBottom: 4 }}>Observed behavior / anecdotal remarks</div>
           {behaviorEntries.length === 0 ? (
-            <div style={{ fontSize: 12, color: "#8a8368" }}>No entries logged.</div>
+            <div style={{ fontSize: 12, color: "rgba(237,234,247,0.58)" }}>No entries logged.</div>
           ) : (
             <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
               {behaviorEntries.slice(-3).map((e, i) => <li key={i}>{e.date}: {e.observation}</li>)}
@@ -1097,10 +1100,10 @@ function SF9Tab({ classes, learners, grades, attendance, behavior, schoolInfo, c
         </div>
 
         <div style={{ marginTop: 16, borderTop: `1px solid ${LINE}`, paddingTop: 12 }}>
-          <div style={{ fontWeight: 700, fontSize: 12.5, color: FOREST_DK, marginBottom: 6 }}>
-            Core values rating <span style={{ fontWeight: 400, color: "#8a8368" }}>(AO/SO/RO/NO — used on the printed SF9)</span>
+          <div style={{ fontWeight: 700, fontSize: 12.5, color: FOREST, marginBottom: 6 }}>
+            Core values rating <span style={{ fontWeight: 400, color: "rgba(237,234,247,0.58)" }}>(AO/SO/RO/NO — used on the printed SF9)</span>
           </div>
-          <div style={{ fontSize: 11, color: "#8a8368", marginBottom: 8 }}>
+          <div style={{ fontSize: 11, color: "rgba(237,234,247,0.58)", marginBottom: 8 }}>
             Statements follow the standard four core values. Wording can vary by DepEd memorandum — treat these as a starting point and adjust to your division's exact template if needed.
           </div>
           {DEFAULT_CORE_VALUES.map((cv) => (
@@ -1176,7 +1179,7 @@ function MPSTab({ classes, learners, mps, setMps }) {
           <Field label="Highest possible score"><TIn type="number" value={form.hps} onChange={(e) => setForm({ ...form, hps: e.target.value })} style={{ width: 100 }} /></Field>
           <Btn onClick={addAssessment} disabled={roster.length === 0}>+ Add assessment</Btn>
         </div>
-        {roster.length === 0 && <div style={{ fontSize: 11.5, color: "#8a8368", marginTop: 6 }}>Enroll learners into this class first.</div>}
+        {roster.length === 0 && <div style={{ fontSize: 11.5, color: "rgba(237,234,247,0.58)", marginTop: 6 }}>Enroll learners into this class first.</div>}
       </Card>
 
       {assessments.map((a) => {
@@ -1188,11 +1191,11 @@ function MPSTab({ classes, learners, mps, setMps }) {
         return (
           <Card key={a.id} style={{ padding: 14, marginBottom: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-              <div style={{ fontWeight: 700 }}>{a.name} <span style={{ fontWeight: 400, color: "#8a8368", fontSize: 12 }}>(HPS {a.hps})</span></div>
+              <div style={{ fontWeight: 700 }}>{a.name} <span style={{ fontWeight: 400, color: "rgba(237,234,247,0.58)", fontSize: 12 }}>(HPS {a.hps})</span></div>
               <div style={{ display: "flex", gap: 12, fontSize: 12.5, alignItems: "center" }}>
                 <span>Mean score: <strong>{round1(meanScore)}</strong></span>
                 <span style={{ background: FOREST, color: "#fff", padding: "3px 10px", borderRadius: 12 }}>MPS: {mpsVal}%</span>
-                <span style={{ color: "#665f47" }}>{level}</span>
+                <span style={{ color: "rgba(237,234,247,0.65)" }}>{level}</span>
                 <Btn kind="danger" onClick={() => removeAssessment(a.id)}>Delete</Btn>
               </div>
             </div>
@@ -1254,7 +1257,7 @@ function BehaviorTab({ learners, behavior, setBehavior, teacherName }) {
       </Card>
 
       <Card style={{ padding: 16 }}>
-        <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: FOREST_DK, marginBottom: 10 }}>
+        <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: FOREST, marginBottom: 10 }}>
           Anecdotal record — {learners.find((l) => l.id === learnerId)?.name}
         </div>
         {entries.length === 0 ? (
@@ -1263,10 +1266,10 @@ function BehaviorTab({ learners, behavior, setBehavior, teacherName }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {entries.map((e, i) => (
               <div key={i} style={{ borderLeft: `3px solid ${GOLD}`, paddingLeft: 10 }}>
-                <div style={{ fontSize: 11.5, color: "#8a8368" }}>{e.date} · recorded by {e.recordedBy}</div>
+                <div style={{ fontSize: 11.5, color: "rgba(237,234,247,0.58)" }}>{e.date} · recorded by {e.recordedBy}</div>
                 <div style={{ fontSize: 13 }}>{e.observation}</div>
-                {e.context && <div style={{ fontSize: 12, color: "#665f47" }}>Context: {e.context}</div>}
-                {e.action && <div style={{ fontSize: 12, color: "#665f47" }}>Action: {e.action}</div>}
+                {e.context && <div style={{ fontSize: 12, color: "rgba(237,234,247,0.65)" }}>Context: {e.context}</div>}
+                {e.action && <div style={{ fontSize: 12, color: "rgba(237,234,247,0.65)" }}>Action: {e.action}</div>}
                 <span style={{ fontSize: 11, color: GARNET, cursor: "pointer" }} onClick={() => removeEntry(i)}>Remove entry</span>
               </div>
             ))}
@@ -1690,6 +1693,7 @@ function LoginScreen({ onSignIn, error, busy }) {
     </div>
   );
 }
+
 export default function App() {
   const [authLoaded, setAuthLoaded] = useState(false);
   const [user, setUser] = useState(null);
