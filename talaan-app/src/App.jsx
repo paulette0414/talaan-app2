@@ -1620,37 +1620,76 @@ function SF9PrintView({ learner, rows, generalAverage, monthlyBreakdown, totalPr
 /* ============================== LOGIN / AUTH GATE ============================== */
 function LoginScreen({ onSignIn, error, busy }) {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: PAPER, fontFamily: "'Segoe UI', system-ui, sans-serif", padding: 20 }}>
-      <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 6, padding: 36, maxWidth: 380, width: "100%", textAlign: "center", boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
-        <div style={{ fontFamily: "Georgia, serif", fontSize: 30, color: FOREST_DK, marginBottom: 4 }}>Talaan</div>
-        <div style={{ fontSize: 13, color: "#6b6552", marginBottom: 24 }}>Class Record & Learner Management Suite</div>
-        <button
-          onClick={onSignIn}
-          disabled={busy}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%",
-            padding: "10px 16px", borderRadius: 4, border: `1px solid ${LINE}`, background: "#fff",
-            fontSize: 14, fontWeight: 600, color: INK, cursor: busy ? "not-allowed" : "pointer",
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 48 48">
-            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.1 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
-            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.1 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
-            <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6C29.6 35.4 26.9 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 39.6 16.3 44 24 44z" />
-            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.6 5.6C41.9 35.9 44 30.4 44 24c0-1.3-.1-2.7-.4-3.5z" />
-          </svg>
-          {busy ? "Signing in…" : "Sign in with Google"}
-        </button>
-        {error && <div style={{ marginTop: 14, fontSize: 12.5, color: GARNET }}>{error}</div>}
-        <div style={{ marginTop: 20, fontSize: 11, color: "#8a8368" }}>
-          Gamitin ang Google account ng paaralan. Ang mga guro na gagamit ng parehong account
-          type ay awtomatikong makakakita at makakapag-edit ng shared class records.
+    <div className="talaan-login">
+      <style>{`
+        .talaan-login { min-height: 100vh; display: flex; background: #0d0a1f; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .talaan-login-hero {
+          flex: 1.1; position: relative; overflow: hidden; display: flex; flex-direction: column;
+          justify-content: center; padding: 64px; color: #fff;
+          background: radial-gradient(1200px 600px at 20% 10%, rgba(124,109,242,0.25), transparent 60%),
+                      linear-gradient(135deg, #150e30 0%, #2a1a63 50%, #4630a0 100%);
+        }
+        .talaan-login-form { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; background: #120c28; }
+        .talaan-shape { position: absolute; border-radius: 26px; background: linear-gradient(160deg, rgba(150,133,255,0.55), rgba(76,40,137,0.08)); }
+        @media (max-width: 860px) { .talaan-login-hero { display: none; } }
+      `}</style>
+
+      <div className="talaan-login-hero">
+        <div className="talaan-shape" style={{ width: 240, height: 300, top: "6%", right: "10%", transform: "rotate(18deg)" }} />
+        <div className="talaan-shape" style={{ width: 170, height: 210, bottom: "8%", right: "26%", transform: "rotate(-14deg)", opacity: 0.55 }} />
+        <div style={{ position: "relative", zIndex: 1, maxWidth: 400 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 48 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Georgia, serif", fontWeight: 700 }}>T</div>
+            <span style={{ fontSize: 17, fontWeight: 600, letterSpacing: 0.3 }}>Talaan</span>
+          </div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 36, lineHeight: 1.25, marginBottom: 18 }}>
+            Class records,<br />organized and<br />shared.
+          </div>
+          <div style={{ fontSize: 14, color: "rgba(255,255,255,0.62)", lineHeight: 1.7 }}>
+            Grades, attendance, SF9, MPS, at anecdotal records ng iyong mga klase — lahat
+            magkasama, madaling ibahagi sa kapwa guro.
+          </div>
+        </div>
+      </div>
+
+      <div className="talaan-login-form">
+        <div style={{ width: "100%", maxWidth: 360 }}>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 27, color: "#fff", marginBottom: 6 }}>Welcome back</div>
+          <div style={{ fontSize: 13.5, color: "rgba(255,255,255,0.55)", marginBottom: 34 }}>
+            Mag-sign in gamit ang Google account ng paaralan para magpatuloy.
+          </div>
+
+          <button
+            onClick={onSignIn}
+            disabled={busy}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%",
+              padding: "13px 16px", borderRadius: 999, border: "none",
+              background: busy ? "rgba(255,255,255,0.5)" : "#fff",
+              fontSize: 14.5, fontWeight: 600, color: "#1b1235", cursor: busy ? "not-allowed" : "pointer",
+              boxShadow: "0 10px 26px rgba(76,40,137,0.45)",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 48 48">
+              <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.1 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
+              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.1 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+              <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6C29.6 35.4 26.9 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 39.6 16.3 44 24 44z" />
+              <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.6 5.6C41.9 35.9 44 30.4 44 24c0-1.3-.1-2.7-.4-3.5z" />
+            </svg>
+            {busy ? "Signing in…" : "Sign in with Google"}
+          </button>
+
+          {error && <div style={{ marginTop: 16, fontSize: 12.5, color: "#ff8fa3" }}>{error}</div>}
+
+          <div style={{ marginTop: 30, fontSize: 11.5, color: "rgba(255,255,255,0.4)", lineHeight: 1.7 }}>
+            Ang mga guro na gagamit ng parehong account type ay awtomatikong makakakita at
+            makakapag-edit ng shared class records.
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
 export default function App() {
   const [authLoaded, setAuthLoaded] = useState(false);
   const [user, setUser] = useState(null);
