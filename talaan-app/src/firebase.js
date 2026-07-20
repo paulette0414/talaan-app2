@@ -19,14 +19,23 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME.firebaseapp.com",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME.appspot.com",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME",
+  apiKey: "AIzaSyBPYCUePhtEqude50FDUgnJzvAesT_Tm80",
+  authDomain: "classrecord-23762.firebaseapp.com",
+  projectId: "classrecord-23762",
+  storageBucket: "classrecord-23762.firebasestorage.app",
+  messagingSenderId: "565222617245",
+  appId: "1:565222617245:web:18d62b5ecdece5a0e46474"
 };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
 // OPTIONAL: kung gusto mong limitahan ang pag-login sa email ng paaralan
 // lang (hal. "@deped.gov.ph" o "@yourschool.edu.ph"), ilagay dito RIN sa
