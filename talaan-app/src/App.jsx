@@ -346,7 +346,7 @@ function TalaanApp({ user }) {
       </div>
 
       {printDoc && (
-        <PrintOverlay onClose={() => setPrintDoc(null)}>
+        <PrintOverlay onClose={() => setPrintDoc(null)} landscape={printDoc.type === "sf2"}>
           {printDoc.type === "sf2" && <SF2PrintView {...printDoc} />}
           {printDoc.type === "sf9" && <SF9PrintView {...printDoc} />}
         </PrintOverlay>
@@ -356,7 +356,7 @@ function TalaanApp({ user }) {
 }
 
 /* ============================== PRINT OVERLAY ============================== */
-function PrintOverlay({ children, onClose }) {
+function PrintOverlay({ children, onClose, landscape }) {
   return (
     <div className="talaan-print-overlay" style={{
       position: "fixed", inset: 0, background: "rgba(20,20,15,0.55)", zIndex: 50,
@@ -368,13 +368,14 @@ function PrintOverlay({ children, onClose }) {
           .talaan-print-area, .talaan-print-area * { visibility: visible; }
           .talaan-print-area { position: absolute; left: 0; top: 0; width: 100%; }
           .talaan-no-print { display: none !important; }
+          ${landscape ? "@page { size: landscape; margin: 10mm; }" : "@page { margin: 12mm; }"}
         }
       `}</style>
       <div className="talaan-no-print" style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <Btn onClick={() => window.print()}>🖨 Print / Save as PDF</Btn>
         <Btn kind="ghost" onClick={onClose} style={{ background: "#fff" }}>Close</Btn>
       </div>
-      <div className="talaan-print-area" style={{ background: "#fff", width: "100%", maxWidth: 820, padding: 28, boxShadow: "0 4px 24px rgba(0,0,0,0.25)" }}>
+      <div className="talaan-print-area" style={{ background: "#fff", width: "100%", maxWidth: landscape ? 1100 : 820, padding: 28, boxShadow: "0 4px 24px rgba(0,0,0,0.25)" }}>
         {children}
       </div>
     </div>
@@ -1382,126 +1383,227 @@ function isWeekend(ym, day) {
   const d = new Date(y, m - 1, day).getDay();
   return d === 0 || d === 6;
 }
+function dayLetter(ym, day) {
+  const [y, m] = ym.split("-").map(Number);
+  const d = new Date(y, m - 1, day).getDay();
+  return ["S", "M", "T", "W", "TH", "F", "S"][d];
+}
 const printTh = { border: "1px solid #999", padding: "3px 4px", fontSize: 9, background: "#eee" };
 const printTd = { border: "1px solid #bbb", padding: "3px 4px", fontSize: 10 };
+const ffld = { padding: "2px 6px", fontSize: 10.5 };
+const sf2Box = { border: "1px solid #000", padding: "2px 6px", fontSize: 10 };
+const sf2Th = { border: "1px solid #555", padding: "1px 2px", fontSize: 6.5, background: "#f3f3f3", textAlign: "center" };
+const sf2Td = { border: "1px solid #999", padding: "1px 2px", fontSize: 7, textAlign: "center", height: 15 };
+
+function symbolFor(status) {
+  if (status === "A") return "X";
+  if (status === "L") return "T"; // Tardy
+  if (status === "E") return "E";
+  return ""; // Present -> blank, per official legend
+}
+
+function hasFiveConsecutiveAbsences(learnerDays, schoolDays) {
+  let streak = 0;
+  for (const d of schoolDays) {
+    const s = learnerDays[d];
+    if (s === "A") { streak++; if (streak >= 5) return true; }
+    else if (s) { streak = 0; }
+  }
+  return false;
+}
 
 function SF2PrintView({ cls, ym, roster, monthData, schoolInfo, teacherName }) {
   const nDays = daysInMonth(ym);
-  const days = Array.from({ length: nDays }, (_, i) => i + 1);
+  const allDays = Array.from({ length: nDays }, (_, i) => i + 1);
+  const schoolDays = allDays.filter((d) => !isWeekend(ym, d)); // only M-F columns, like the real form
   const male = roster.filter((l) => l.sex === "M");
   const female = roster.filter((l) => l.sex === "F");
 
-  const dailyPresentCount = (list, day) =>
-    list.filter((l) => (monthData[l.id] || {})[day] === "P").length;
+  const countStatus = (learnerId, status) =>
+    Object.values(monthData[learnerId] || {}).filter((s) => s === status).length;
 
-  const learnerRow = (l) => {
-    const days2 = monthData[l.id] || {};
-    const present = Object.values(days2).filter((s) => s === "P").length;
-    const absent = Object.values(days2).filter((s) => s === "A").length;
-    return (
-      <tr key={l.id}>
-        <td style={{ ...printTd, textAlign: "left", whiteSpace: "nowrap" }}>{l.name}</td>
-        {days.map((d) => {
-          const s = days2[d];
-          const weekend = isWeekend(ym, d);
-          return (
-            <td key={d} style={{ ...printTd, textAlign: "center", background: weekend ? "#f2f2f2" : "#fff" }}>
-              {s || ""}
-            </td>
-          );
-        })}
-        <td style={{ ...printTd, textAlign: "center", fontWeight: 700 }}>{present}</td>
-        <td style={{ ...printTd, textAlign: "center", fontWeight: 700 }}>{absent}</td>
-      </tr>
-    );
-  };
+  const dailyPresentCount = (list, day) =>
+    list.filter((l) => {
+      const s = (monthData[l.id] || {})[day];
+      return s === undefined || s === "P"; // blank/unmarked or explicit P both read as "present" on the real form
+    }).length;
+
+  const learnerRow = (l) => (
+    <tr key={l.id}>
+      <td style={{ ...sf2Td, textAlign: "left", whiteSpace: "nowrap", fontSize: 7.5 }}>{l.name}</td>
+      {schoolDays.map((d) => (
+        <td key={d} style={sf2Td}>{symbolFor((monthData[l.id] || {})[d])}</td>
+      ))}
+      <td style={{ ...sf2Td, fontWeight: 700 }}>{countStatus(l.id, "A")}</td>
+      <td style={{ ...sf2Td, fontWeight: 700 }}>{countStatus(l.id, "L")}</td>
+      <td style={{ ...sf2Td, fontSize: 6.5 }}></td>
+    </tr>
+  );
+
+  const totalPerDayRow = (list, label) => (
+    <tr>
+      <td style={{ ...sf2Td, textAlign: "left", fontWeight: 700, fontSize: 7 }}>{label}</td>
+      {schoolDays.map((d) => (
+        <td key={d} style={{ ...sf2Td, fontWeight: 700 }}>{dailyPresentCount(list, d)}</td>
+      ))}
+      <td style={sf2Td}></td><td style={sf2Td}></td><td style={sf2Td}></td>
+    </tr>
+  );
+
+  const combinedTotals = schoolDays.map((d) => dailyPresentCount(roster, d));
+  const avgDailyAttendance = schoolDays.length ? round1(combinedTotals.reduce((a, b) => a + b, 0) / schoolDays.length) : 0;
+  const pctAttendance = round1(pct(avgDailyAttendance, roster.length || 1));
+  const fiveConsecutive = roster.filter((l) => hasFiveConsecutiveAbsences(monthData[l.id] || {}, schoolDays)).length;
 
   return (
-    <div style={{ fontFamily: "Georgia, serif", color: "#111" }}>
-      <div style={{ textAlign: "center", marginBottom: 10 }}>
-        <div style={{ fontSize: 10, letterSpacing: 1 }}>School Form 2 (SF2) — Daily Attendance Report of Learners</div>
-        <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2 }}>Monthly Learners' Attendance Report</div>
+    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", color: "#111" }}>
+      {/* ===== PAGE 1 ===== */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <div style={{ width: 50, height: 50, borderRadius: "50%", border: "2px solid #1b3d8f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, textAlign: "center", fontWeight: 700, color: "#1b3d8f" }}>
+          DepEd<br />Seal
+        </div>
+        <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>School Form 2 (SF2) Daily Attendance Report of Learners</div>
+          <div style={{ fontSize: 8.5, fontStyle: "italic" }}>(This replaced Form 1, Form 2 & STS Form 4 - Absenteeism and Dropout Profile)</div>
+        </div>
+        <div style={{ width: 70, textAlign: "center", fontSize: 9, fontWeight: 700, color: "#c8102e" }}>DepEd</div>
       </div>
-      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 8, fontSize: 10.5 }}>
+
+      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 6 }}>
         <tbody>
           <tr>
-            <td style={ffld}>School ID: <b>{schoolInfo?.schoolId || "___________"}</b></td>
-            <td style={ffld}>School Name: <b>{schoolInfo?.schoolName || "___________"}</b></td>
-            <td style={ffld}>School Year: <b>{schoolInfo?.schoolYear || "___________"}</b></td>
+            <td style={{ ...sf2Box, width: "12%" }}>School ID</td>
+            <td style={{ ...sf2Box, width: "20%" }}>{schoolInfo?.schoolId || ""}</td>
+            <td style={{ ...sf2Box, width: "10%" }}>School Year</td>
+            <td style={{ ...sf2Box, width: "18%" }}>{schoolInfo?.schoolYear || ""}</td>
+            <td style={{ ...sf2Box, width: "18%" }}>Report for the Month of</td>
+            <td style={{ ...sf2Box, width: "22%" }}>{monthLabel(ym)}</td>
           </tr>
           <tr>
-            <td style={ffld}>District: <b>{schoolInfo?.district || "___________"}</b></td>
-            <td style={ffld}>Division: <b>{schoolInfo?.division || "___________"}</b></td>
-            <td style={ffld}>Region: <b>{schoolInfo?.region || "___________"}</b></td>
+            <td style={sf2Box}>Name of School</td>
+            <td style={sf2Box} colSpan={3}>{schoolInfo?.schoolName || ""}</td>
+            <td style={sf2Box}>Grade Level</td>
+            <td style={sf2Box}>{cls.gradeLevel}</td>
           </tr>
           <tr>
-            <td style={ffld}>Grade & Section: <b>{cls.gradeLevel} — {cls.section}</b></td>
-            <td style={ffld}>Subject: <b>{cls.subject}</b></td>
-            <td style={ffld}>Month: <b>{monthLabel(ym)}</b></td>
-          </tr>
-          <tr>
-            <td style={ffld} colSpan={3}>Teacher: <b>{teacherName || "___________"}</b></td>
+            <td style={sf2Box}>Subject / Adviser</td>
+            <td style={sf2Box} colSpan={3}>{cls.subject} — {teacherName || ""}</td>
+            <td style={sf2Box}>Section</td>
+            <td style={sf2Box}>{cls.section}</td>
           </tr>
         </tbody>
       </table>
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ borderCollapse: "collapse", fontSize: 9 }}>
+        <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead>
             <tr>
-              <th style={{ ...printTh, textAlign: "left" }}>Learner's Name</th>
-              {days.map((d) => <th key={d} style={printTh}>{d}</th>)}
-              <th style={printTh}>Present</th>
-              <th style={printTh}>Absent</th>
+              <th rowSpan={2} style={{ ...sf2Th, textAlign: "left", width: 130 }}>LEARNER'S NAME<br />(Last Name, First Name, Middle Name)</th>
+              {schoolDays.map((d) => <th key={d} style={sf2Th}>{d}</th>)}
+              <th rowSpan={2} style={sf2Th}>ABSENT</th>
+              <th rowSpan={2} style={sf2Th}>TARDY</th>
+              <th rowSpan={2} style={{ ...sf2Th, width: 90 }}>REMARKS</th>
+            </tr>
+            <tr>
+              {schoolDays.map((d) => <th key={d} style={{ ...sf2Th, fontWeight: 400 }}>{dayLetter(ym, d)}</th>)}
             </tr>
           </thead>
           <tbody>
-            <tr><td style={{ ...printTd, fontWeight: 700, background: "#f7f4e8" }} colSpan={days.length + 3}>MALE</td></tr>
+            <tr><td style={{ ...sf2Td, textAlign: "left", fontWeight: 700, background: "#e8e8e8" }} colSpan={schoolDays.length + 4}>MALE</td></tr>
             {male.map(learnerRow)}
-            <tr><td style={{ ...printTd, fontWeight: 700, background: "#f7f4e8" }} colSpan={days.length + 3}>FEMALE</td></tr>
+            {totalPerDayRow(male, "MALE | TOTAL Per Day")}
+            <tr><td style={{ ...sf2Td, textAlign: "left", fontWeight: 700, background: "#e8e8e8" }} colSpan={schoolDays.length + 4}>FEMALE</td></tr>
             {female.map(learnerRow)}
-            <tr>
-              <td style={{ ...printTd, fontWeight: 700 }}>Total present per day</td>
-              {days.map((d) => (
-                <td key={d} style={{ ...printTd, textAlign: "center", fontWeight: 700 }}>{dailyPresentCount(roster, d)}</td>
-              ))}
-              <td style={printTd}></td><td style={printTd}></td>
-            </tr>
+            {totalPerDayRow(female, "FEMALE | TOTAL Per Day")}
+            {totalPerDayRow(roster, "Combined TOTAL PER DAY")}
           </tbody>
         </table>
       </div>
 
-      <div style={{ marginTop: 12, fontSize: 10.5 }}>
-        <table style={{ borderCollapse: "collapse", width: "100%" }}>
-          <tbody>
-            <tr>
-              <td style={ffld}>Enrolment as of {monthLabel(ym)}: <b>{roster.length}</b> ({male.length} male, {female.length} female)</td>
-              <td style={ffld}>Average daily attendance: <b>
-                {round1(pct(days.reduce((s, d) => s + dailyPresentCount(roster, d), 0), days.filter((d) => !isWeekend(ym, d)).length * (roster.length || 1)))}%
-              </b></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      {/* ===== PAGE 2 ===== */}
+      <div style={{ pageBreakBefore: "always", paddingTop: 16, fontSize: 8.5 }}>
+        <div style={{ display: "flex", gap: 16 }}>
+          <div style={{ flex: 1.3 }}>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>GUIDELINES:</div>
+            <ol style={{ margin: 0, paddingLeft: 16, lineHeight: 1.5 }}>
+              <li>The attendance shall be accomplished daily. Refer to the codes for checking learners' attendance.</li>
+              <li>Dates shall be written in the preceding columns beside Learner's Name.</li>
+              <li>
+                To compute the following:
+                <div style={{ marginTop: 3, marginLeft: 6 }}>
+                  a. Percentage of Enrolment = (Registered Learner as of End of the Month ÷ Enrolment as of 1st Friday of June) × 100<br />
+                  b. Average Daily Attendance = Total Daily Attendance ÷ Number of School Days in reporting month<br />
+                  c. Percentage of Attendance for the month = (Average daily attendance ÷ Registered Learner as of End of the month) × 100
+                </div>
+              </li>
+              <li>Every End of the month, the class adviser will submit this form to the office of the principal for recording of summary table into the School Form 4. Once signed by the principal, this form should be returned to the adviser.</li>
+              <li>The adviser will extend necessary intervention including but not limited to home visitation to learner/s that committed 5 consecutive days of absences or those with potentials of dropping out.</li>
+              <li>Attendance performance of learner is expected to reflect in Form 137 and Form 138 every grading period.</li>
+              <li style={{ fontStyle: "italic" }}>Beginning of School Year cut-off report is every 1st Friday of School Calendar Days.</li>
+            </ol>
 
-      <div style={{ marginTop: 10, fontSize: 9, color: "#555" }}>
-        Legend: P = Present, A = Absent, L = Late, E = Excused. Shaded columns are weekends.
-      </div>
+            <div style={{ fontWeight: 700, marginTop: 10, marginBottom: 4 }}>1. CODES FOR CHECKING ATTENDANCE</div>
+            <div style={{ lineHeight: 1.5 }}>
+              blank = Present; X = Absent; T = Tardy; E = Excused absence
+            </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 36, fontSize: 10.5 }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ borderTop: "1px solid #333", width: 180, paddingTop: 4 }}>{teacherName || "Teacher"}</div>
-          <div style={{ fontSize: 9, color: "#555" }}>Teacher</div>
+            <div style={{ fontWeight: 700, marginTop: 10, marginBottom: 4 }}>2. REASONS/CAUSES OF DROP-OUTS</div>
+            <div style={{ columnCount: 2, columnGap: 14, lineHeight: 1.5 }}>
+              <div><b>a. Domestic-Related Factors</b><br />a.1 Had to take care of siblings<br />a.2 Early marriage/pregnancy<br />a.3 Parents' attitude toward schooling<br />a.4 Family problems</div>
+              <div style={{ marginTop: 6 }}><b>b. Individual-Related Factors</b><br />b.1 Illness · b.2 Overage · b.3 Death · b.4 Drug Abuse<br />b.5 Poor academic performance · b.6 Lack of interest/Distractions · b.7 Hunger/Malnutrition</div>
+              <div style={{ marginTop: 6 }}><b>c. School-Related Factors</b><br />c.1 Teacher Factor · c.2 Physical condition of classroom · c.3 Peer influence</div>
+              <div style={{ marginTop: 6 }}><b>d. Geographic/Environmental</b><br />d.1 Distance between home and school · d.2 Armed conflict (incl. Tribal wars & clanfeuds) · d.3 Calamities/Disasters</div>
+              <div style={{ marginTop: 6 }}><b>e. Financial-Related</b><br />e.1 Child labor, work</div>
+              <div style={{ marginTop: 6 }}><b>f. Others</b></div>
+            </div>
+          </div>
+
+          <div style={{ flex: 1 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 10 }}>
+              <tbody>
+                <tr><td style={{ ...sf2Box, fontWeight: 700 }}>Month</td><td style={sf2Box}>{monthLabel(ym)}</td></tr>
+                <tr><td style={{ ...sf2Box, fontWeight: 700 }}>No. of Days of Classes</td><td style={sf2Box}>{schoolDays.length}</td></tr>
+              </tbody>
+            </table>
+
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={sf2Th}>Summary for the Month</th>
+                  <th style={sf2Th}>M</th><th style={sf2Th}>F</th><th style={sf2Th}>TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style={{ ...sf2Td, textAlign: "left" }}>Enrolment as of 1st Friday of June</td><td style={sf2Td}></td><td style={sf2Td}></td><td style={sf2Td}></td></tr>
+                <tr><td style={{ ...sf2Td, textAlign: "left" }}>Late Enrollment during the month</td><td style={sf2Td}></td><td style={sf2Td}></td><td style={sf2Td}></td></tr>
+                <tr><td style={{ ...sf2Td, textAlign: "left" }}>Registered Learner as of end of the month</td><td style={sf2Td}>{male.length}</td><td style={sf2Td}>{female.length}</td><td style={{ ...sf2Td, fontWeight: 700 }}>{roster.length}</td></tr>
+                <tr><td style={{ ...sf2Td, textAlign: "left" }}>Percentage of Enrolment as of end of the month</td><td style={sf2Td}></td><td style={sf2Td}></td><td style={sf2Td}></td></tr>
+                <tr><td style={{ ...sf2Td, textAlign: "left" }}>Average Daily Attendance</td><td style={sf2Td}></td><td style={sf2Td}></td><td style={{ ...sf2Td, fontWeight: 700 }}>{avgDailyAttendance}</td></tr>
+                <tr><td style={{ ...sf2Td, textAlign: "left" }}>Percentage of Attendance for the month</td><td style={sf2Td}></td><td style={sf2Td}></td><td style={{ ...sf2Td, fontWeight: 700 }}>{pctAttendance}%</td></tr>
+                <tr><td style={{ ...sf2Td, textAlign: "left" }}>No. of students with 5 consecutive days of absences</td><td style={sf2Td}></td><td style={sf2Td}></td><td style={{ ...sf2Td, fontWeight: 700 }}>{fiveConsecutive}</td></tr>
+                <tr><td style={{ ...sf2Td, textAlign: "left" }}>Drop out</td><td style={sf2Td}></td><td style={sf2Td}></td><td style={sf2Td}></td></tr>
+                <tr><td style={{ ...sf2Td, textAlign: "left" }}>Transferred out</td><td style={sf2Td}></td><td style={sf2Td}></td><td style={sf2Td}></td></tr>
+                <tr><td style={{ ...sf2Td, textAlign: "left" }}>Transferred in</td><td style={sf2Td}></td><td style={sf2Td}></td><td style={sf2Td}></td></tr>
+              </tbody>
+            </table>
+
+            <div style={{ marginTop: 16, fontSize: 9 }}>I certify that this is a true and correct report.</div>
+            <div style={{ marginTop: 34, textAlign: "center" }}>
+              <div style={{ borderTop: "1px solid #333", paddingTop: 3 }}>{teacherName || "\u00A0"}</div>
+              <div style={{ fontSize: 8 }}>(Signature of Teacher over Printed Name)</div>
+            </div>
+            <div style={{ marginTop: 10, fontSize: 9 }}>Attested by:</div>
+            <div style={{ marginTop: 34, textAlign: "center" }}>
+              <div style={{ borderTop: "1px solid #333", paddingTop: 3 }}>&nbsp;</div>
+              <div style={{ fontSize: 8 }}>(Signature of School Head over Printed Name)</div>
+            </div>
+          </div>
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ borderTop: "1px solid #333", width: 180, paddingTop: 4 }}>&nbsp;</div>
-          <div style={{ fontSize: 9, color: "#555" }}>School Head</div>
-        </div>
+        <div style={{ marginTop: 16, fontSize: 8 }}>School Form 2: Page 2 of 2</div>
       </div>
     </div>
   );
 }
-const ffld = { padding: "2px 6px", fontSize: 10.5 };
 
 /* ============================== SF9 PRINT VIEW ============================== */
 function SF9PrintView({ learner, rows, generalAverage, monthlyBreakdown, totalPresent, totalMarked, coreValueRatings, remarks, schoolInfo }) {
