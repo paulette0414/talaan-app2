@@ -12,13 +12,15 @@ import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
      the /api/data serverless function — the browser never talks to
      Turso directly, so the database credentials stay on the server.
    - Every request to /api/data must carry a valid Google sign-in
-     token; the server checks it before reading or writing. That's
-     what makes "share this class with a co-teacher" work: anyone
-     signed in (optionally restricted to your school's email domain,
-     see src/firebase.js) sees and edits the same records.
-   - There's no per-teacher permission model yet — anyone who can
-     sign in can edit any class. Treat it as a trusted staffroom
-     tool unless you add finer-grained rules later.
+     token; the server checks it before reading or writing.
+   - Classes (and their grades, attendance, MPS, and collections) are
+     only visible to the class's owner and the co-teacher Gmail
+     addresses added to it — this is enforced on the SERVER, not just
+     hidden in the UI, so it holds even if someone inspects network
+     traffic. See api/data.js.
+   - Learners (roster), behavior notes, school info, core values, and
+     SF9 remarks remain shared across everyone signed in — treated as
+     common school-wide records, not per-class.
    ============================================================ */
 
 const INK = "#EDEAF7";
@@ -334,7 +336,7 @@ function TalaanApp({ user }) {
       <div style={{ padding: 20, maxWidth: 1180, margin: "0 auto" }}>
         {tab === "dashboard" && <Dashboard learners={learners} classes={classes} grades={grades} collections={collections} behavior={behavior} schoolInfo={schoolInfo} setSchoolInfo={setSchoolInfo} />}
         {tab === "learners" && <LearnersTab learners={learners} setLearners={setLearners} classes={classes} />}
-        {tab === "classes" && <ClassesTab classes={classes} setClasses={setClasses} learners={learners} teacherName={teacherName} />}
+        {tab === "classes" && <ClassesTab classes={classes} setClasses={setClasses} learners={learners} teacherName={teacherName} user={user} />}
         {tab === "grades" && <GradesTab classes={classes} learners={learners} grades={grades} setGrades={setGrades} />}
         {tab === "attendance" && <AttendanceTab classes={classes} learners={learners} attendance={attendance} setAttendance={setAttendance} schoolInfo={schoolInfo} teacherName={teacherName} onPrint={setPrintDoc} />}
         {tab === "sf9" && <SF9Tab classes={classes} learners={learners} grades={grades} attendance={attendance} behavior={behavior} schoolInfo={schoolInfo} coreValues={coreValues} setCoreValues={setCoreValues} sf9Meta={sf9Meta} setSf9Meta={setSf9Meta} onPrint={setPrintDoc} />}
@@ -550,7 +552,7 @@ const th = { padding: "8px 10px", fontSize: 10.5, textTransform: "uppercase", le
 const td = { padding: "7px 10px" };
 
 /* ============================== CLASSES ============================== */
-function ClassesTab({ classes, setClasses, learners, teacherName }) {
+function ClassesTab({ classes, setClasses, learners, teacherName, user }) {
   const [form, setForm] = useState({ subject: "", gradeLevel: "", section: "", termType: "quarter", weightPreset: "language" });
   const [coTeacherInput, setCoTeacherInput] = useState({});
   const [openRoster, setOpenRoster] = useState(null);
@@ -567,8 +569,9 @@ function ClassesTab({ classes, setClasses, learners, teacherName }) {
         termType: form.termType,
         weights: WEIGHT_PRESETS[form.weightPreset],
         weightPreset: form.weightPreset,
-        owner: teacherName || "Unnamed teacher",
-        coTeachers: [],
+        owner: teacherName || user?.email || "Unnamed teacher",
+        ownerEmail: user?.email || "",
+        coTeacherEmails: [],
         learnerIds: [],
       },
     ]);
@@ -584,20 +587,20 @@ function ClassesTab({ classes, setClasses, learners, teacherName }) {
   };
 
   const addCoTeacher = (classId) => {
-    const name = (coTeacherInput[classId] || "").trim();
-    if (!name) return;
+    const raw = (coTeacherInput[classId] || "").trim().toLowerCase();
+    if (!raw || !raw.includes("@")) return;
     const c = classes.find((x) => x.id === classId);
-    if (!c.coTeachers.includes(name)) updateClass(classId, { coTeachers: [...c.coTeachers, name] });
+    if (!c.coTeacherEmails.includes(raw)) updateClass(classId, { coTeacherEmails: [...c.coTeacherEmails, raw] });
     setCoTeacherInput({ ...coTeacherInput, [classId]: "" });
   };
-  const removeCoTeacher = (classId, name) => {
+  const removeCoTeacher = (classId, email) => {
     const c = classes.find((x) => x.id === classId);
-    updateClass(classId, { coTeachers: c.coTeachers.filter((n) => n !== name) });
+    updateClass(classId, { coTeacherEmails: c.coTeacherEmails.filter((n) => n !== email) });
   };
 
   return (
     <div>
-      <SectionTitle sub="Create a subject class, set its grading weights and term structure, and share it with co-teachers by name — any teacher using this same app can then open and edit it.">
+      <SectionTitle sub="Create a subject class and set its grading weights and term structure. Only you and the co-teacher Gmail addresses you add can see or edit a class — everyone else's classes stay hidden from you.">
         Classes
       </SectionTitle>
 
@@ -631,61 +634,66 @@ function ClassesTab({ classes, setClasses, learners, teacherName }) {
       </Card>
 
       {classes.length === 0 ? (
-        <Empty text="No classes yet." />
+        <Empty text="Wala ka pang class dito — maaari itong dahil wala ka pang ginagawa, o wala kang access sa mga umiiral na. Gumawa ng bago sa itaas." />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {classes.map((c) => (
-            <Card key={c.id} style={{ padding: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: FOREST }}>{c.subject} <span style={{ fontWeight: 400, color: "rgba(237,234,247,0.58)", fontSize: 12 }}>· {c.gradeLevel} {c.section}</span></div>
-                  <div style={{ fontSize: 11.5, color: "rgba(237,234,247,0.58)" }}>{c.termType} · WW {c.weights.WW} / PT {c.weights.PT} / QA {c.weights.QA} · owner: {c.owner}</div>
-                </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <Btn kind="ghost" onClick={() => setOpenRoster(openRoster === c.id ? null : c.id)}>
-                    {openRoster === c.id ? "Hide roster" : `Roster (${c.learnerIds.length})`}
-                  </Btn>
-                  <Btn kind="danger" onClick={() => removeClass(c.id)}>Delete</Btn>
-                </div>
-              </div>
-
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontSize: 11, color: "rgba(237,234,247,0.58)", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>Shared with (co-teachers)</div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                  {c.coTeachers.map((n) => (
-                    <span key={n} style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 12, padding: "3px 10px", fontSize: 12 }}>
-                      {n} <span style={{ cursor: "pointer", color: GARNET, marginLeft: 4 }} onClick={() => removeCoTeacher(c.id, n)}>×</span>
-                    </span>
-                  ))}
-                  <TIn
-                    placeholder="Co-teacher's name"
-                    value={coTeacherInput[c.id] || ""}
-                    onChange={(e) => setCoTeacherInput({ ...coTeacherInput, [c.id]: e.target.value })}
-                    onKeyDown={(e) => e.key === "Enter" && addCoTeacher(c.id)}
-                    style={{ width: 150 }}
-                  />
-                  <Btn kind="ghost" onClick={() => addCoTeacher(c.id)}>Add</Btn>
-                </div>
-                <div style={{ fontSize: 11, color: "rgba(237,234,247,0.58)", marginTop: 4 }}>
-                  Any teacher who opens this app can already edit any class. Listing names here is just a visible record of who's teaching it together — it does not lock anyone out.
-                </div>
-              </div>
-
-              {openRoster === c.id && (
-                <div style={{ marginTop: 10, borderTop: `1px solid ${LINE}`, paddingTop: 10 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 6 }}>
-                    {learners.length === 0 && <Empty text="Add learners in the Learners tab first." />}
-                    {learners.map((l) => (
-                      <label key={l.id} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12.5 }}>
-                        <input type="checkbox" checked={c.learnerIds.includes(l.id)} onChange={() => toggleEnroll(c.id, l.id)} />
-                        {l.name}
-                      </label>
-                    ))}
+          {classes.map((c) => {
+            const isOwner = c.ownerEmail === user?.email;
+            return (
+              <Card key={c.id} style={{ padding: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: FOREST }}>{c.subject} <span style={{ fontWeight: 400, color: "rgba(237,234,247,0.58)", fontSize: 12 }}>· {c.gradeLevel} {c.section}</span></div>
+                    <div style={{ fontSize: 11.5, color: "rgba(237,234,247,0.58)" }}>
+                      {c.termType} · WW {c.weights.WW} / PT {c.weights.PT} / QA {c.weights.QA} · may-ari: {isOwner ? "ikaw" : (c.ownerEmail || "—")}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <Btn kind="ghost" onClick={() => setOpenRoster(openRoster === c.id ? null : c.id)}>
+                      {openRoster === c.id ? "Hide roster" : `Roster (${c.learnerIds.length})`}
+                    </Btn>
+                    <Btn kind="danger" onClick={() => removeClass(c.id)}>Delete</Btn>
                   </div>
                 </div>
-              )}
-            </Card>
-          ))}
+
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontSize: 11, color: "rgba(237,234,247,0.58)", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>Shared with (co-teacher Gmail)</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                    {(c.coTeacherEmails || []).map((n) => (
+                      <span key={n} style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 12, padding: "3px 10px", fontSize: 12 }}>
+                        {n} <span style={{ cursor: "pointer", color: GARNET, marginLeft: 4 }} onClick={() => removeCoTeacher(c.id, n)}>×</span>
+                      </span>
+                    ))}
+                    <TIn
+                      placeholder="guro@gmail.com"
+                      value={coTeacherInput[c.id] || ""}
+                      onChange={(e) => setCoTeacherInput({ ...coTeacherInput, [c.id]: e.target.value })}
+                      onKeyDown={(e) => e.key === "Enter" && addCoTeacher(c.id)}
+                      style={{ width: 170 }}
+                    />
+                    <Btn kind="ghost" onClick={() => addCoTeacher(c.id)}>Add</Btn>
+                  </div>
+                  <div style={{ fontSize: 11, color: "rgba(237,234,247,0.58)", marginTop: 4 }}>
+                    Tanging ikaw at ang mga Gmail na nakalista dito ang makakakita at makakapag-edit ng klaseng ito — hindi ito makikita ng ibang guro.
+                  </div>
+                </div>
+
+                {openRoster === c.id && (
+                  <div style={{ marginTop: 10, borderTop: `1px solid ${LINE}`, paddingTop: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 6 }}>
+                      {learners.length === 0 && <Empty text="Add learners in the Learners tab first." />}
+                      {learners.map((l) => (
+                        <label key={l.id} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12.5 }}>
+                          <input type="checkbox" checked={c.learnerIds.includes(l.id)} onChange={() => toggleEnroll(c.id, l.id)} />
+                          {l.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
